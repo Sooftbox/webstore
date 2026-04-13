@@ -1,19 +1,19 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { Product } from '@/lib/types'
-import { Plus, Edit, Trash2, Loader2, X, Save, Upload } from 'lucide-react'
-import { uploadFileToR2 } from '@/lib/uploadToR2'
-import toast from 'react-hot-toast'
+import { useEffect, useState, ChangeEvent, FormEvent } from 'react';
+import { Product } from '@/lib/types';
+import { Plus, Edit, Trash2, Loader2, X, Save, Upload } from 'lucide-react';
+import { uploadFileToR2 } from '@/lib/uploadToR2';
+import toast from 'react-hot-toast';
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState('')
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -24,29 +24,29 @@ export default function AdminProductsPage() {
     deliveryContent: '',
     features: '',
     stock: '',
-  })
+  });
 
   const secret =
     typeof window !== 'undefined'
       ? localStorage.getItem('admin_secret') || ''
-      : ''
+      : '';
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/products')
-      const data = await res.json()
-      setProducts(Array.isArray(data) ? data : [])
+      const res = await fetch('/api/products');
+      const data = await res.json();
+      setProducts(Array.isArray(data) ? data : []);
     } catch {
-      toast.error('Failed to load products')
-      setProducts([])
+      toast.error('Failed to load products');
+      setProducts([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    fetchProducts();
+  }, []);
 
   const resetForm = () => {
     setForm({
@@ -58,15 +58,15 @@ export default function AdminProductsPage() {
       deliveryContent: '',
       features: '',
       stock: '',
-    })
-    setEditingProduct(null)
-    setShowForm(false)
-    setImageFile(null)
-    setImagePreview('')
-  }
+    });
+    setEditingProduct(null);
+    setShowForm(false);
+    setImageFile(null);
+    setImagePreview('');
+  };
 
   const openEditForm = (product: Product) => {
-    setEditingProduct(product)
+    setEditingProduct(product);
     setForm({
       name: product.name || '',
       description: product.description || '',
@@ -76,30 +76,30 @@ export default function AdminProductsPage() {
       deliveryContent: product.deliveryContent || '',
       features: product.features?.join('\n') || '',
       stock: String(product.stock ?? ''),
-    })
-    setImageFile(null)
-    setImagePreview('')
-    setShowForm(true)
-  }
+    });
+    setImageFile(null);
+    setImagePreview('');
+    setShowForm(true);
+  };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
-  }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSaving(true);
 
-    let imageUrl = form.imageUrl
+    let imageUrl = form.imageUrl;
 
     try {
       if (imageFile) {
-        const { publicUrl } = await uploadFileToR2(imageFile, 'products', secret)
-        imageUrl = publicUrl
+        const { publicUrl } = await uploadFileToR2(imageFile, 'products', secret);
+        imageUrl = publicUrl;
       }
 
       const productData = {
@@ -115,64 +115,64 @@ export default function AdminProductsPage() {
           .filter(Boolean),
         stock: Number(form.stock),
         secret,
-      }
+      };
 
       if (editingProduct) {
         const res = await fetch('/api/products', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...productData, id: editingProduct.id }),
-        })
+        });
 
         if (!res.ok) {
-          const err = await res.json().catch(() => null)
-          throw new Error(err?.error || 'Failed to update product')
+          const err = await res.json().catch(() => null);
+          throw new Error(err?.error || 'Failed to update product');
         }
 
-        toast.success('Product updated!')
+        toast.success('Product updated!');
       } else {
         const res = await fetch('/api/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productData),
-        })
+        });
 
         if (!res.ok) {
-          const err = await res.json().catch(() => null)
-          throw new Error(err?.error || 'Failed to create product')
+          const err = await res.json().catch(() => null);
+          throw new Error(err?.error || 'Failed to create product');
         }
 
-        toast.success('Product created!')
+        toast.success('Product created!');
       }
 
-      resetForm()
-      fetchProducts()
+      resetForm();
+      fetchProducts();
     } catch (err: any) {
-      toast.error(err?.message || 'Failed')
+      toast.error(err?.message || 'Failed');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this product?')) return
+    if (!confirm('Delete this product?')) return;
 
     try {
       const res = await fetch(`/api/products?id=${id}&secret=${secret}`, {
         method: 'DELETE',
-      })
+      });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => null)
-        throw new Error(err?.error || 'Failed to delete product')
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error || 'Failed to delete product');
       }
 
-      toast.success('Product deleted')
-      fetchProducts()
+      toast.success('Product deleted');
+      fetchProducts();
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to delete product')
+      toast.error(err?.message || 'Failed to delete product');
     }
-  }
+  };
 
   return (
     <div>
@@ -185,8 +185,8 @@ export default function AdminProductsPage() {
         </div>
         <button
           onClick={() => {
-            resetForm()
-            setShowForm(true)
+            resetForm();
+            setShowForm(true);
           }}
           className="px-6 py-3 bg-accent text-primary font-semibold rounded-xl hover:bg-accent-hover transition-all flex items-center gap-2"
         >
@@ -220,9 +220,7 @@ export default function AdminProductsPage() {
                     type="text"
                     required
                     value={form.name}
-                    onChange={(e) =>
-                      setForm({ ...form, name: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text-primary focus:outline-none focus:border-accent/50"
                   />
                 </div>
@@ -234,9 +232,7 @@ export default function AdminProductsPage() {
                     type="text"
                     required
                     value={form.category}
-                    onChange={(e) =>
-                      setForm({ ...form, category: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
                     className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text-primary focus:outline-none focus:border-accent/50"
                     placeholder="e.g. Script, Template, Software"
                   />
@@ -250,9 +246,7 @@ export default function AdminProductsPage() {
                 <textarea
                   required
                   value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text-primary focus:outline-none focus:border-accent/50 resize-none"
                 />
@@ -267,9 +261,7 @@ export default function AdminProductsPage() {
                     type="number"
                     required
                     value={form.price}
-                    onChange={(e) =>
-                      setForm({ ...form, price: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
                     className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text-primary focus:outline-none focus:border-accent/50"
                   />
                 </div>
@@ -281,9 +273,7 @@ export default function AdminProductsPage() {
                     type="number"
                     required
                     value={form.stock}
-                    onChange={(e) =>
-                      setForm({ ...form, stock: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, stock: e.target.value })}
                     className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text-primary focus:outline-none focus:border-accent/50"
                   />
                 </div>
@@ -305,8 +295,8 @@ export default function AdminProductsPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setImageFile(null)
-                          setImagePreview('')
+                          setImageFile(null);
+                          setImagePreview('');
                         }}
                         className="absolute top-2 right-2 p-1.5 bg-red-500/80 rounded-lg text-white hover:bg-red-500"
                       >
@@ -335,15 +325,11 @@ export default function AdminProductsPage() {
                 </label>
 
                 <div className="mt-2">
-                  <p className="text-text-muted text-xs mb-1">
-                    Or paste image URL:
-                  </p>
+                  <p className="text-text-muted text-xs mb-1">Or paste image URL:</p>
                   <input
                     type="url"
                     value={form.imageUrl}
-                    onChange={(e) =>
-                      setForm({ ...form, imageUrl: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
                     className="w-full px-4 py-2 bg-surface border border-border rounded-xl text-text-primary text-sm focus:outline-none focus:border-accent/50"
                     placeholder="https://..."
                   />
@@ -360,9 +346,7 @@ export default function AdminProductsPage() {
                 <textarea
                   required
                   value={form.deliveryContent}
-                  onChange={(e) =>
-                    setForm({ ...form, deliveryContent: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, deliveryContent: e.target.value })}
                   rows={4}
                   className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text-primary focus:outline-none focus:border-accent/50 resize-none font-mono text-sm"
                   placeholder="Download link, license key, or product details..."
@@ -375,12 +359,10 @@ export default function AdminProductsPage() {
                 </label>
                 <textarea
                   value={form.features}
-                  onChange={(e) =>
-                    setForm({ ...form, features: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, features: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text-primary focus:outline-none focus:border-accent/50 resize-none"
-                  placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
+                  placeholder={'Feature 1\nFeature 2\nFeature 3'}
                 />
               </div>
 
@@ -481,10 +463,7 @@ export default function AdminProductsPage() {
 
               {products.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-10 text-center text-text-muted"
-                  >
+                  <td colSpan={5} className="px-6 py-10 text-center text-text-muted">
                     No products yet
                   </td>
                 </tr>
@@ -494,5 +473,5 @@ export default function AdminProductsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
